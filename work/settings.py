@@ -25,7 +25,7 @@ SECRET_KEY = '+%464itd6$mrda$@djbo8ftx+8vs+-2*f8=o39h-52!f#uwl%v'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['hospitalbillingio.herokuapp.com', '127.0.0.1', 'localhost']
 
 
 # Application definition

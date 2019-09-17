@@ -322,7 +322,7 @@ def make_payment(request):
         amount = int(request.GET.get("amount")) * 100
         response = requests.post("https://api.paystack.co/transaction/initialize",
                                  data={"email": f"{hospital_id}@hospital.io", "amount": amount,
-                                       "callback_url": "https://da51dec7.ngrok.io/payment-made"},
+                                       "callback_url": "https://hospitalbillingio.herokuapp.com/payment-made"},
                                  headers={"Authorization": "Bearer sk_test_8e31ea60a3a6b4c890cd6dc090f4a9a96dc1031b"})
         url = response.json()["data"]["authorization_url"]
         return HttpResponseRedirect(url)

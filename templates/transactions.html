@@ -1,0 +1,37 @@
+{% extends 'inherits/base.html' %}
+{% block main %}
+    {% include 'inherits/user-nav.html' %}
+    <div class="container pt-4">
+        <h1>Transactions</h1>
+        <table class="table table-striped">
+            <thead class="thead-dark">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Date</th>
+                <th scope="col">Amount</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+        $(
+            $.get("/api/transactions/", {full: true})
+                .done(function ({transactions}) {
+                    let data = JSON.parse(transactions);
+                    if (data.length > 0) {
+                        let lists = data.reduce(function (t, x, i) {
+                            return t + `<tr>
+                                        <th scope="row">${i + 1}</th>
+                                        <td>${new Date(x.fields.date).toLocaleString()}</td>
+                                        <td>&#8358; ${x.fields.amount.toLocaleString()}</td>
+                                    </tr>`;
+                        }, '');
+                        $("tbody").html(lists);
+                    }
+                })
+        );
+    </script>
+{% endblock %}

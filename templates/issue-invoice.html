@@ -1,0 +1,318 @@
+{% extends 'inherits/base.html' %}
+{% block main %}
+    {% include 'inherits/staff-nav.html' %}
+    <style>
+        .badge:hover {
+            background: #c55;
+            color: white;
+            cursor: pointer;
+        }
+        .badge {
+            background: #c2c2c2;
+        }
+        .badge:hover > span {
+            display: inline;
+        }
+
+        .badge > span {
+            font-family: ubuntu mono;
+            display: none;
+        }
+    </style>
+    <form class="container col-6 mx-auto my-5" onsubmit="return false">
+        {% csrf_token %}
+        <h3>General details</h3>
+        <hr>
+        <br>
+        <div class="form-group">
+            <label for="patient_id">Patient ID</label>
+            <input type="text" class="form-control" id="patient_id" placeholder="E.g. HOS123456">
+        </div>
+        <div class="form-group">
+            <label for="ward_cost">Cost of ward</label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">&#8358;</span>
+                </div>
+                <input type="number" class="form-control" min="0" step="50" id="ward_cost" placeholder="E.g. 5000">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="days_in_ward">Days in Ward</label>
+            <input type="number" class="form-control" min="1" id="days_in_ward" value="1" disabled>
+        </div>
+        <br><br>
+        <h3>Other</h3>
+        <hr>
+        <br>
+        <div class="form-group">
+            <label for="consultation">Consultation</label>
+            <div class="row mx-auto">
+                <div class="col-9 container">
+                    <select class="form-control" id="consultations">
+                        {#                    <option value="default">Select ...</option>#}
+                        {#                    <option value="0">Oncologist</option>#}
+                        {#                    <option value="1">Gynaecologist</option>#}
+                        {#                    <option value="2">Neurologist</option>#}
+                        {#                    <option value="3">Dentist</option>#}
+                        {#                    <option value="4">Opthalmologist</option>#}
+                        {#                    <option value="5">Cardiologist</option>#}
+                        {#                    <option value="6">Orthopaedist</option>#}
+                        {#                    <option value="7">Physiotherapist</option>#}
+                        {#                    <option value="8">Human Physiologist</option>#}
+                        {#                    <option value="9">Paediatrician</option>#}
+                    </select>
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-dark" id="add-consultations">+ Add</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-3" consultations-pills></div>
+        <div class="form-group">
+            <label for="services">Services</label>
+            <div class="row mx-auto">
+                <div class="col-9 container">
+                    <select class="form-control" id="services"></select>
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-dark" id="add-services">+ Add</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-3" services-pills></div>
+        <div class="form-group">
+            <label for="drugs">Drugs</label>
+            <div class="row mx-auto">
+                <div class="col-6 container">
+                    <select class="form-control" id="drugs"></select>
+                </div>
+                <div class="col-3 container">
+                    <input type="number" class="form-control" id="quantity" placeholder="Qty" min="1">
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-dark" id="add-drugs">+ Add</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-3" drugs-pills></div>
+        <div class="form-group">
+            <label for="tests">Tests</label>
+            <div class="row mx-auto">
+                <div class="col-9 container">
+                    <select class="form-control" id="tests"></select>
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-dark" id="add-tests">+ Add</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-3" tests-pills></div>
+        <div class="form-group">
+            <label for="consumables">Consumables</label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">&#8358;</span>
+                </div>
+                <input type="number" class="form-control" id="consumables" step="50" placeholder="E.g. 5000">
+            </div>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" checked type="checkbox" id="pharmacy_bag">
+            <label class="form-check-label" for="pharmacy_bag">
+                Pharmacy Bag
+            </label>
+        </div>
+        <div class="alert alert-warning mx-4 mt-4 d-none" invoice-notification role="alert"></div>
+        <button type="button" class="btn btn-dark mt-4" submit-invoice>Submit
+            <div class="spinner-border spinner-border-sm text-light d-none" spinner role="status" aria-hidden="true">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </button>
+    </form>
+{% endblock %}
+{% block script %}
+    <script>
+        let consultations, services, drugs, tests;
+        $(
+            $.get("/api/invoice-data/")
+                .done(function ({data}) {
+                    consultations = JSON.parse(data.consultations);
+                    services = JSON.parse(data.services);
+                    drugs = JSON.parse(data.drugs);
+                    tests = JSON.parse(data.tests);
+                    $("#services").html(services.reduce(function (total, s) {
+                        return total + `<option value="${s.pk}">${s.fields.name}</option>`;
+                    }, ""));
+                    $("#consultations").html(consultations.reduce(function (total, c) {
+                        return total + `<option value="${c.pk}">${c.fields.name}</option>`;
+                    }, ""));
+                    $("#drugs").html(drugs.reduce(function (total, d) {
+                        return total + `<option value="${d.pk}">${d.fields.name}</option>`;
+                    }, ""));
+                    $("#tests").html(tests.reduce(function (total, t) {
+                        return total + `<option value="${t.pk}">${t.fields.name}</option>`;
+                    }, ""));
+                    $("#services, #drugs, #tests, #consultations").prepend("<option value='default' selected>Select ...</option>")
+                })
+                .fail(function (error) {
+                    console.error(error);
+                })
+        );
+        $(
+            $("#ward_cost").keyup(function () {
+                if (this.value > 0) $("#days_in_ward").prop("disabled", false);
+                else $("#days_in_ward").prop("disabled", true);
+            })
+        );
+        $(
+            $("#add-consultations").click(function () {
+                if ($("#consultations").val() !== "default") {
+                    $("#consultations").removeClass("is-invalid");
+                    if($("[consultations-pills]").children().toArray().map(function(x){ return x.dataset.pk; }).includes($("#consultations").val())){
+                        return;
+                    }
+                    $("[consultations-pills]").append(`<span class="badge badge-pill m-1 badge-light p-2" data-pk="${$("#consultations").val()}">${consultations.find(function (x) {
+                        return x.pk === $("#consultations").val();
+                    }).fields.name} <span>&times;</span></span>`);
+                    deletePills();
+                } else {
+                    $("#consultations").addClass("is-invalid");
+                }
+            })
+        );
+        $(
+            $("#add-services").click(function () {
+                if ($("#services").val() !== "default") {
+                    $("#services").removeClass("is-invalid");
+                    if($("[services-pills]").children().toArray().map(function(x){ return x.dataset.pk; }).includes($("#services").val())){
+                        return;
+                    }
+                    $("[services-pills]").append(`<span class="badge badge-pill m-1 badge-light p-2" data-pk="${$("#services").val()}">${services.find(function (x) {
+                        return x.pk === $("#services").val()
+                    }).fields.name} <span>&times;</span></span>`);
+                    deletePills();
+                } else {
+                    $("#services").addClass("is-invalid");
+                }
+            })
+        );
+        $(
+            $("#add-drugs").click(function () {
+                if ($("#drugs").val() !== "default" && $("#quantity").val()) {
+                    $("#drugs").removeClass("is-invalid");
+                    $("#quantity").removeClass("is-invalid");
+                    if($("[drugs-pills]").children().toArray().map(function(x){ return x.dataset.pk; }).includes($("#drugs").val())){
+                        return;
+                    }
+                    $("[drugs-pills]").append(`<span class="badge badge-pill m-1 badge-light p-2" data-qty="${$("#quantity").val()}" data-pk="${$("#drugs").val()}">${drugs.find(function (x) {
+                        return x.pk === $("#drugs").val()
+                    }).fields.name} - ${$("#quantity").val()} <span>&times;</span></span>`);
+                    deletePills();
+                } else if ($("#drugs").val() !== "default" && !$("#quantity").val()) {
+                    $("#drugs").removeClass("is-invalid");
+                    $("#quantity").addClass("is-invalid");
+                } else {
+                    $("#drugs").addClass("is-invalid");
+                }
+            })
+        );
+        $(
+            $("#add-tests").click(function () {
+                if ($("#tests").val() !== "default") {
+                    $("#tests").removeClass("is-invalid");
+                    if($("[tests-pills]").children().toArray().map(function(x){ return x.dataset.pk; }).includes($("#tests").val())){
+                        return;
+                    }
+                    $("[tests-pills]").append(`<span class="badge badge-pill data-pk="${$("#tests").val()}" m-1 badge-light p-2">${tests.find(function (x) {
+                        return x.pk === $("#tests").val()
+                    }).fields.name} <span>&times;</span></span>`);
+                    deletePills();
+                } else {
+                    $("#tests").addClass("is-invalid");
+                }
+            })
+        );
+
+        function deletePills() {
+            $(".badge.badge-pill").click(function () {
+                this.remove();
+            })
+        }
+
+        $(
+            $("#patient_id").blur(function () {
+                if (!$("#patient_id").val()) {
+                    $("#patient_id").removeClass("is-valid").addClass("is-invalid");
+                } else {
+                    $.get("/api/confirm-patient/", {"patient_id": $("#patient_id").val()})
+                        .done(function (data) {
+                            $("#patient_id").removeClass("is-invalid").addClass("is-valid");
+                        })
+                        .fail(function () {
+                            $("#patient_id").removeClass("is-valid").addClass("is-invalid");
+                        });
+                }
+            })
+        );
+        $(
+            $("[submit-invoice]").click(function () {
+                $(this).prop("disabled", true);
+                $("[spinner]").removeClass("d-none");
+                if ($("#patient_id").hasClass("is-invalid") || $("#patient_id").val() == "") {
+                    $.get("/api/confirm-patient/", {"patient_id": $("#patient_id").val()})
+                        .done(function (data) {
+                            $("#patient_id").removeClass("is-invalid").addClass("is-valid");
+                        })
+                        .fail(function () {
+                            $("#patient_id").removeClass("is-valid").addClass("is-invalid");
+                            return;
+                        });
+                }
+                const submitData = {};
+                submitData.patient_id = $("#patient_id").val();
+                submitData.ward_cost = parseInt($("#ward_cost").val());
+                submitData.days_in_ward = $("#days_in_ward").prop("disabled") ? 0 : $("#days_in_ward").val();
+                submitData.consultations = JSON.stringify($("[consultations-pills]").children().map(function (i, e) {
+                    return e.dataset.pk
+                }).toArray());
+                submitData.services = JSON.stringify($("[services-pills]").children().map(function (i, e) {
+                    return e.dataset.pk
+                }).toArray());
+                submitData.drugs = JSON.stringify($("[drugs-pills]").children().map(function (i, e) {
+                    return {qty: e.dataset.qty, id: e.dataset.pk}
+                }).toArray());
+                submitData.tests = JSON.stringify($("[tests-pills]").children().map(function (i, e) {
+                    return e.dataset.pk
+                }).toArray());
+                submitData.consumables = parseInt($("#consumables").val());
+                submitData.pharmacy_bag = $("#pharmacy_bag").get(0).checked;
+                submitData.csrfmiddlewaretoken = $("[name='csrfmiddlewaretoken']").val();
+                if (submitData.consultations == "[]" && submitData.services == "[]" && submitData.drugs == "[]" && submitData.tests == "[]" && submitData.consumables == 0 && submitData.ward_cost == 0) {
+                    $("[invoice-notification]").removeClass("alert-danger").removeClass("alert-success").addClass("alert-warning").html("You can not create an empty invoice. Add at least one consultation, service, drug or test. You can also include a price for consumables instead.").removeClass("d-none");
+                    $("[spinner]").addClass("d-none");
+                    $("[submit-invoice]").prop("disabled", false);
+                    return;
+                }
+                $.post("/api/process-invoice/", submitData)
+                    .done(function ({success}) {
+                        $("[invoice-notification]").removeClass("alert-warning").removeClass("alert-danger").addClass("alert-success").html(success).removeClass("d-none");
+                        $("[spinner]").addClass("d-none");
+                        $("#patient_id").val("").removeClass("is-valid");
+                        $("#ward_cost").val("");
+                        $("#days_in_ward").val(1).prop("disabled", true);
+                        $("[consultations-pills], [drugs-pills], [tests-pills], [services-pills]").html("");
+                        $("#drugs, #tests, #services, #consultations").val("default");
+                        $("#quantity").val(null);
+                        $("#consumables").val("");
+                        $("[submit-invoice]").prop("disabled", false);
+                    })
+                    .fail(function (error) {
+                        $("[invoice-notification]").removeClass("alert-success").removeClass("alert-warning").addClass("alert-danger").html("Something went wrong").removeClass("d-none");
+                        $("[spinner]").addClass("d-none");
+                        $("[submit-invoice]").prop("disabled", false);
+                    });
+            })
+        )
+    </script>
+{% endblock %}

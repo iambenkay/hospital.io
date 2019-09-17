@@ -1,0 +1,99 @@
+{% extends 'inherits/base.html' %}
+{% block main %}
+    {% include 'inherits/no-auth-nav.html' %}
+    <div class="row container mx-auto">
+        {% csrf_token %}
+        <div class="col-6 p-5">
+            <div class="card bg-danger text-white p-3">
+                <h5 class="card-title">ADMIN LOGIN</h5>
+                <p class="card-text">Login here if you're an administrator or staff.</p>
+                <div class="card-body bg-light rounded text-dark">
+                    <form method="post" id="adminform" onsubmit="return false">
+                        <div class="alert alert-success d-none" login-notification role="alert"></div>
+                        <div class="form-group">
+                            <label for="admin_login">Username</label>
+                            <input type="text" name="username" class="form-control" id="admin_login"
+                                   placeholder="Enter username">
+                        </div>
+                        <div class="form-group">
+                            <label for="admin_password">Password</label>
+                            <input type="password" name="password" class="form-control" id="admin_password"
+                                   placeholder="Password">
+                        </div>
+                        <button type="submit" class="btn btn-danger">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 p-5">
+            <div class="card bg-primary text-light p-3">
+                <h5 class="card-title">PATIENT LOGIN</h5>
+                <p class="card-text">Login here if you're a patient at this hospital</p>
+                <div class="card-body bg-light rounded text-dark">
+                    <form onsubmit="return false" id="patientform">
+                        <div class="alert alert-success d-none" login-notification role="alert"></div>
+                        <div class="form-group">
+                            <label for="patient_login">Username</label>
+                            <input type=text class="form-control" id="patient_login"
+                                   aria-describedby="emailHelp" placeholder="Enter username">
+                        </div>
+                        <div class="form-group">
+                            <label for="patient_password">Password</label>
+                            <input type="password" class="form-control" id="patient_password"
+                                   placeholder="Password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+        $(
+            $('#adminform button').click(function () {
+                $.post("/api/admin-login/", {
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val(),
+                    username: $('#admin_login').val(),
+                    password: $('#admin_password').val(),
+                }, function ({success}) {
+                    if (success) {
+                        $('#adminform [login-notification]').removeClass('alert-danger')
+                            .addClass('alert-success').html(success).removeClass('d-none');
+                        window.setTimeout(function () {
+                            window.location = "/admin/dashboard";
+                        }, 1000);
+                    }
+                }).fail(function (error) {
+                    if (error) {
+                        $('#adminform [login-notification]').removeClass('alert-success')
+                            .addClass('alert-danger').html(error.responseJSON.error).removeClass('d-none');
+                    }
+                })
+            })
+        );
+        $(
+            $('#patientform button').click(function () {
+                $.post("/api/login/", {
+                    csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val(),
+                    username: $('#patient_login').val(),
+                    password: $('#patient_password').val(),
+                }, function ({success}) {
+                    if (success) {
+                        $('#patientform [login-notification]').removeClass('alert-danger')
+                            .addClass('alert-success').html(success).removeClass('d-none');
+                        window.setTimeout(function () {
+                            window.location = "/dashboard";
+                        }, 1000);
+                    }
+                }).fail(function (error) {
+                    if (error) {
+                        $('#patientform [login-notification]').removeClass('alert-success')
+                            .addClass('alert-danger').html(error.responseJSON.error).removeClass('d-none');
+                    }
+                })
+            })
+        );
+    </script>
+{% endblock %}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ receipt.pk }}</title>
+    <style>
+        body > div {
+            width: 400px;
+            box-shadow: 0 0 3px #aaa;
+            min-height: 600px;
+            margin: auto;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        [general-details] {
+            text-align: left;
+        }
+
+        thead {
+            font-weight: bold;
+            border: 1px solid black;
+        }
+
+        table {
+            width: 90%;
+            border: 1px solid black;
+            margin: 30px auto auto auto;
+        }
+
+        tbody {
+            border: .5px solid black;
+        }
+
+        td {
+            border: .5px solid black;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h2>RECEIPT</h2>
+    <div general-details>
+        <div>Name: {{ request.user.get_full_name }}</div>
+        <div>Ward Cost: &#8358; {{ receipt.ward_cost }}</div>
+        <div>Days In Ward: {{ receipt.days_in_ward }}</div>
+        <div>Date generated: {{ receipt.date }}</div>
+        <table>
+            <thead>
+            <tr>
+                <td>Used</td>
+                <td>Price</td>
+            </tr>
+            </thead>
+            <tbody>
+            {% if receipt.consultations %}
+                {% for c in receipt.consultations.all %}
+                    <tr>
+                        <td>{{ c.name }}</td>
+                        <td> &#8358; {{ c.price }}</td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+            {% if receipt.tests %}
+                {% for c in receipt.tests.all %}
+                    <tr>
+                        <td>{{ c.test.name }}</td>
+                        <td> &#8358; {{ c.total }}</td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+            {% if receipt.services %}
+                {% for c in receipt.services.all %}
+                    <tr>
+                        <td>{{ c.service.name }}</td>
+                        <td> &#8358; {{ c.total }}</td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+            {% if receipt.drugs %}
+                {% for c in receipt.drugs.all %}
+                    <tr>
+                        <td>{{ c.drug.name }}</td>
+                        <td> &#8358; {{ c.total }}</td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+            {% if receipt.consumables %}
+                <tr>
+                    <td>Consumables</td>
+                    <td> &#8358; {{ receipt.consumables }}</td>
+                </tr>
+            {% endif %}
+            <thead>
+            <tr>
+                <td>Total</td>
+                <td> &#8358; {{ receipt.total }}</td>
+            </tr>
+            </thead>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+<script>
+    window.print();
+</script>
+</body>
+</html>

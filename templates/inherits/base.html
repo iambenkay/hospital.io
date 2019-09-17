@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="/static/profile.png">
+
+    <title>hospital.io</title>
+    <style>
+        [navbar-brand] {
+            height: 50px;
+        }
+
+        * {
+            font-family: sawasdee;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+{% block main %}{% endblock %}
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="/static/bootstrap/js/jquery-3.4.1.min.js"></script>
+<script src="/static/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(
+        $($("li.nav-item > .nav-link").toArray().find(function(x){ return x.href === window.location.href; }))
+            .addClass("active")
+            .append(` <span class="sr-only">(current)</span>`)
+    );
+</script>
+{% block script %}{% endblock %}
+</body>
+</html>

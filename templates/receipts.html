@@ -1,0 +1,165 @@
+{% extends 'inherits/base.html' %}
+{% block main %}
+    {% include 'inherits/user-nav.html' %}
+    <div class="modal fade" id="invoice-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalScrollableTitle">Invoice Summary</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h3>General Details</h3>
+                    <div>Name: <span user></span></div>
+                    <div>Name: <span bal></span></div>
+                    <div>Hospital ID: <span hospital-id></span></div>
+                    <div>Ward Fee: <span ward></span></div>
+                    <div class="mb-4">Consumables: <span consumables></span></div>
+                    <div drugs class="d-none">
+                        <h4>Drugs <span class="text-muted" drugs-total></span></h4>
+                        <ul invoice-drugs></ul>
+                    </div>
+                    <div consultations class="d-none">
+                        <h4>Consultations <span class="text-muted" consultations-total></span></h4>
+                        <ul invoice-consultations></ul>
+                    </div>
+                    <div tests class="d-none">
+                        <h4>Tests <span class="text-muted" tests-total></span></h4>
+                        <ul invoice-tests></ul>
+                    </div>
+                    <div services class="d-none">
+                        <h4>Services <span class="text-muted" services-total></span></h4>
+                        <ul invoice-services></ul>
+                    </div>
+
+                    <div class="alert alert-danger mt-4 d-none" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-dark" pay-modal></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container pt-4">
+    <h1>Receipts</h1>
+    <table class="table table-striped">
+        <thead class="thead-dark">
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Date</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+{% endblock %}
+{% block script %}
+    <script>
+        $(
+            $("[user]").html("{{ request.user.get_full_name }}"),
+            $("[hospital-id]").html("{{ request.user.hospital_id }}"),
+            $("[bal]").html("&#8358; " + parseInt("{{ request.user.wallet_balance }}").toLocaleString())
+        )
+        $(
+            $("#invoice-modal h3").addClass("mt-4")
+        );
+        $(
+            $.get("/api/receipts/", {full: true})
+                .done(function ({receipts}) {
+                    data = JSON.parse(receipts);
+                    if (data.length > 0) {
+                        let lists = data.reduce(function (t, x, i) {
+                            const paid = `<a href="#" class="badge badge-success">Paid</a>`,
+                                unpaid = `<a href="#" class="badge badge-danger">Unpaid</a>`;
+                            return t + `<tr>
+                                        <th scope="row">${i + 1}</th>
+                                        <td>${new Date(x.fields.date).toLocaleString()}</td>
+                                        <td>&#8358; ${x.fields.total.toLocaleString()}</td>
+                                        <td>${x.fields.paid ? paid : unpaid}</td>
+                                        <td data-pk="${x.pk}">
+                                            ${!x.fields.paid ? `<div class="btn-group" role="group" aria-label="Actions">
+                                            <button type="button" class="btn btn-success" pay-now>Pay now</button>
+                                            <button type="button" class="btn btn-secondary" get-invoice>Get invoice</button>
+                                            </div>` : `<button type="button" class="btn btn-success" print-receipt onclick="window.location = '/print-receipt/${x.pk}'">Print receipt</button>`}
+                                        </td>
+                                    </tr>`;
+                        }, '');
+                        $("tbody").html(lists);
+                        $("[pay-now]").click(function () {
+                            let id = $(this).parent().parent().data().pk;
+
+                            let item = data.find(function (x) {
+                                return x.pk === id;
+                            });
+                            $("#invoice-modal [ward]").html("&#8358; " + (item.fields.ward_cost * item.fields.days_in_ward).toLocaleString());
+                            $("#invoice-modal [consumables]").html("&#8358; " + item.fields.consumables.toLocaleString());
+                            if (item.drugs != 0) {
+                                $("#invoice-modal [drugs-total]").html("~ &#8358; " + item.drugs.reduce(function (x, i) {
+                                    return x + i.total;
+                                }, 0).toLocaleString());
+                                let list = item.drugs.reduce(function (x, i) {
+                                    return x + `<li>${i.name} <span class="text-muted">~ &#8358; ${i.total.toLocaleString()}</span></li>`
+                                }, "");
+                                $("#invoice-modal [invoice-drugs]").html(list.length ? list : "No drugs were purchased");
+                                $("[drugs]").removeClass("d-none");
+                            }
+                            if (item.consultations != 0) {
+                                $("#invoice-modal [consultations-total]").html("~ &#8358; " + item.consultations.reduce(function (x, i) {
+                                    return x + i.fields.price;
+                                }, 0).toLocaleString());
+                                list = item.consultations.reduce(function (x, i) {
+                                    return x + `<li>${i.fields.name} <span class="text-muted">~ &#8358; ${i.fields.price.toLocaleString()}</span></li>`
+                                }, "");
+                                $("#invoice-modal [invoice-consultations]").html(list.length ? list : "No consultations were purchased");
+                                $("[consultations]").removeClass("d-none");
+                            }
+                            if (item.tests != 0) {
+                                $("#invoice-modal [tests-total]").html("~ &#8358; " + item.tests.reduce(function (x, i) {
+                                    return x + i.total;
+                                }, 0).toLocaleString());
+                                list = item.tests.reduce(function (x, i) {
+                                    return x + `<li>${i.name} <span class="text-muted">~ &#8358; ${i.total.toLocaleString()}</span></li>`
+                                }, "");
+                                $("#invoice-modal [invoice-tests]").html(list.length ? list : "No tests were purchased");
+                                $("[tests]").removeClass("d-none");
+                            }
+                            if (item.services != 0) {
+                                $("#invoice-modal [services-total]").html("~ &#8358; " + item.services.reduce(function (x, i) {
+                                    return x + i.total;
+                                }, 0).toLocaleString());
+                                list = item.services.reduce(function (x, i) {
+                                    return x + `<li>${i.name} <span class="text-muted">~ &#8358; ${i.total.toLocaleString()}</span></li>`
+                                }, "");
+                                $("#invoice-modal [invoice-services]").html(list.length ? list : "No services were purchased");
+                                $("[services]").removeClass("d-none");
+                            }
+                            $("#invoice-modal [pay-modal]").html("Pay &#8358; " + item.fields.total.toLocaleString());
+                            $("#invoice-modal [pay-modal]").data().pk = item.pk;
+                            $("#invoice-modal").modal('show');
+                        });
+                        $("[pay-modal]").click(function () {
+                            $.get("/api/receipts/pay/", {id: $(this).data().pk})
+                                .done(function ({message}) {
+                                    $("#invoice-modal .alert").addClass("alert-success").removeClass("alert-danger").html(message).removeClass("d-none");
+                                    setTimeout(function () {
+                                        $("#invoice-modal").modal('hide');
+                                        $("#invoice-modal [pay-modal]").addClass("d-none");
+                                        window.location.reload();
+                                    }, 1500);
+                                    $("#invoice-modal .modal-body").get(0).scrollTop = $("#invoice-modal .modal-body").get(0).scrollHeight;
+                                })
+                                .fail(function (e) {
+                                    $("#invoice-modal .alert").addClass("alert-danger").removeClass("alert-success").html(e.responseJSON.message).removeClass("d-none");
+                                    $("#invoice-modal .modal-body").get(0).scrollTop = $("#invoice-modal .modal-body").get(0).scrollHeight;
+                                })
+                        });
+                    }
+                })
+        );
+    </script>
+{% endblock %}
+</html>

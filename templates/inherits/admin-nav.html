@@ -1,0 +1,15 @@
+{% extends 'inherits/base-nav.html' %}
+{% block rest-link %}/admin/dashboard/{% endblock %}
+{% block nav-type %}Admin{% endblock %}
+{% block nav-items %}
+<div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+                <a class="nav-link active" href="/admin/dashboard/">Stats <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin">Management console</a>
+            </li>
+        </ul>
+    </div>
+{% endblock %}

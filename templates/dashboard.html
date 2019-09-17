@@ -1,0 +1,151 @@
+{% extends 'inherits/base.html' %}
+{% block main %}
+    {% include 'inherits/user-nav.html' %}
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Top Up your account</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" role="alert">
+                        You must top up with at least &#8358; 500
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount to top up</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">&#8358;</span>
+                            </div>
+                            <input type="number" class="form-control" step="50" id="amount"
+                                   placeholder="E.g. 5000">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-dark" pay>Top Up</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row container mx-auto">
+        <div class="col-6">
+            <div class="col p-3">
+                <div class="card bg-dark text-white">
+                    <div class="row no-gutters p-5">
+                        <div class="col d-flex flex-column align-items-center justify-content-center">
+                            <h1 bal></h1>
+                            <button class="btn btn-dark border" style="cursor: pointer" data-toggle="modal"
+                                    data-target="#exampleModal">Top Up
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col p-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">Receipts</h2>
+                        <hr>
+                        <p class="card-text">
+                        <div no-receipts class="text-muted bg-light p-4 text-center">
+                        <span class="spinner-border spinner-border-sm" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </span>
+                        </div>
+                        <ul class="list-group d-none" receipts></ul>
+                        </p>
+                        <a class="btn btn-dark d-none" full-receipt href="/receipts">View All Receipts</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="col p-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">Transaction History</h2>
+                        <hr>
+                        <p class="card-text">
+                        <div no-transactions class="text-muted bg-light p-4 text-center">
+                        <span class="spinner-border spinner-border-sm" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </span>
+                        </div>
+                        <ul class="list-group d-none" transactions></ul>
+                        </p>
+                        </p>
+                        <a class="btn btn-dark d-none" full-transaction href="/transactions">View Full Transaction
+                            History</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+        $(
+            $("[bal]").html(`Bal: &#8358; ${parseInt({{ user.wallet_balance }}).toLocaleString()}`)
+        );
+        $(
+            $("#amount").blur(function () {
+                if ($(this).val() < 500) {
+                    $(this).addClass("is-invalid");
+                } else $(this).removeClass("is-invalid");
+            })
+        );
+        $(
+            $("#amount").focus(function () {
+                $(this).removeClass("is-invalid");
+            })
+        );
+        $(
+            $("[pay]").click(function () {
+                if ($("#amount").val() < 500) {
+                    $("#amount").addClass("is-invalid");
+                } else {
+                    window.location = `/make-payment?amount=${$("#amount").val()}`;
+                }
+            })
+        );
+        $(
+            $.get("/api/receipts/")
+                .done(function ({receipts}) {
+                    let data = JSON.parse(receipts);
+                    if (data.length > 0) {
+                        let lists = data.reduce(function (t, i) {
+                            const paid = `<a href="#" class="badge badge-success">Paid</a>`,
+                                unpaid = `<a href="#" class="badge badge-danger">Unpaid</a>`;
+                            return t + `<li class="list-group-item">${new Date(i.fields.date).toLocaleString()}<span class="float-right">&#8358; ${i.fields.total.toLocaleString()}   ${i.fields.paid ? paid : unpaid}</span></li>`;
+                        }, '');
+                        $("[no-receipts]").addClass("d-none");
+                        $("[receipts]").html(lists).removeClass("d-none");
+                        $("[full-receipt]").removeClass("d-none");
+                    } else {
+                        $("[no-receipts]").html("You have no receipts at this time");
+                    }
+                })
+        );
+        $(
+            $.get("/api/transactions/")
+                .done(function ({transactions}) {
+                    let data = JSON.parse(transactions);
+                    if (data.length > 0) {
+                        let lists = data.reduce(function (t, i) {
+                            return t + `<li class="list-group-item">${new Date(i.fields.date).toLocaleString()}<span class="float-right">&#8358; ${i.fields.amount.toLocaleString()}</span></li>`;
+                        }, '');
+                        $("[no-transactions]").addClass("d-none");
+                        $("[transactions]").html(lists).removeClass("d-none");
+                        $("[full-transaction]").removeClass("d-none");
+                    } else {
+                        $("[no-transactions]").html("You have no transactions at this time");
+                    }
+                })
+        )
+    </script>
+{% endblock %}

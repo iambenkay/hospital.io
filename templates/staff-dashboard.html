@@ -1,0 +1,171 @@
+{% extends 'inherits/base.html' %}
+{% block main %}
+    {% block nav %}{% include 'inherits/staff-nav.html' %}{% endblock %}
+    <form class="container p-5" onsubmit="return false">
+        <h1 class="mb-3">Get Stats</h1>
+        <div class="form-row">
+            <div class="col-3">
+                <input type="number" id="n" min=0 value=30 class="form-control" placeholder="Number of...">
+            </div>
+            <div class="col-3">
+                <select class="custom-select" id="types" aria-label="Example select with button addon">
+                    <option value="daily" selected>Days</option>
+                    <option value="weekly">weeks</option>
+                    <option value="monthly">Months</option>
+                    <option value="yearly">Years</option>
+                </select>
+            </div>
+            <button class="btn btn-dark" get-stats>Get Stats</button>
+        </div>
+    </form>
+    <div class="row container mx-auto">
+        <div class="col p-3 m-4">
+            <h2>Statistics <small class="text-muted" summary-info></small></h2>
+            <hr>
+            <div class="row container mx-auto">
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h1 class="card-title p-4" drugs-total><span class="spinner-grow" role="status"></span>
+                            </h1>
+                            <p class="card-text">Drugs were sold</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h1 class="card-title p-4" tests-total><span class="spinner-grow" role="status"></span>
+                            </h1>
+                            <p class="card-text">Lab tests were carried out</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h1 class="card-title p-4" services-total>
+                                <div class="spinner-grow" role="status"></div>
+                            </h1>
+                            <p class="card-text">Medical services were rendered</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row container mx-auto">
+        <div class="col p-3 m-4">
+            <h2 class="text-center">Detailed Statistics</h2>
+            <hr>
+            <br>
+            <h4>Drugs</h4>
+            <table class="table">
+                <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Txn Id</th>
+                    <th scope="col">Drug</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Cost</th>
+                    <th scope="col">Date</th>
+                </tr>
+                </thead>
+                <tbody drugs></tbody>
+            </table>
+            <hr>
+            <br>
+            <h4>Lab Tests</h4>
+            <table class="table">
+                <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Txn Id</th>
+                    <th scope="col">Test</th>
+                    <th scope="col">Cost</th>
+                    <th scope="col">Date</th>
+                </tr>
+                </thead>
+                <tbody tests></tbody>
+            </table>
+            <hr>
+            <br>
+            <h4>Services</h4>
+            <table class="table">
+                <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Txn Id</th>
+                    <th scope="col">Service</th>
+                    <th scope="col">Cost</th>
+                    <th scope="col">Date</th>
+                </tr>
+                </thead>
+                <tbody services></tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+    <script>
+        $(
+            $.get("/stats/")
+                .done(setupStats),
+            $("[get-stats]").click(function () {
+                if (!$("#types").val()) {
+                    $("#types").addClass("is-invalid");
+                    return;
+                } else {
+                    $("#types").removeClass("is-invalid");
+                    $("body").css("opacity", 0.2);
+                    $("[get-stats]").prop("disabled", true);
+                    $.get("/stats/", {types: $("#types").val(), n: $("#n").val()})
+                        .done(setupStats);
+                }
+            })
+        );
+
+        function setupStats({stats}) {
+            stats = JSON.parse(stats);
+            $("[drugs-total]").html(parseInt(stats.drug_count).toLocaleString());
+            $("[services-total]").html(parseInt(stats.service_count).toLocaleString());
+            $("[tests-total]").html(parseInt(stats.test_count).toLocaleString());
+
+            let list;
+            $("[summary-info]").html(stats.summary);
+            list = stats.drugs.reduce(function (x, item, i) {
+                return x + `<tr>
+                                            <th scope="row">${i + 1}</th>
+                                            <td>${item.drug.fields.name}</td>
+                                            <td>${(item.fields.total / item.drug.fields.price).toLocaleString()}</td>
+                                            <td>&#8358; ${item.fields.total.toLocaleString()}</td>
+                                            <td>${new Date(item.fields.time_created).toLocaleString()}</td>
+                                        </tr>`
+            }, "");
+            if (list) $("[drugs]").html(list);
+            else $("[drugs]").html("<tr><td>No drugs so far<td></tr>");
+
+            list = stats.services.reduce(function (x, item, i) {
+                return x + `<tr>
+                                            <th scope="row">${i + 1}</th>
+                                            <td>${item.service.fields.name}</td>
+                                            <td>&#8358; ${item.fields.total.toLocaleString()}</td>
+                                            <td>${new Date(item.fields.time_created).toLocaleString()}</td>
+                                        </tr>`
+            }, "");
+            if (list) $("[services]").html(list);
+            else $("[services]").html("<div class='p-3'>No services so far</div>");
+
+            list = stats.tests.reduce(function (x, item, i) {
+                return x + `<tr>
+                                            <th scope="row">${i + 1}</th>
+                                            <td>${item["test"].fields.name}</td>
+                                            <td>&#8358; ${item.fields.total.toLocaleString()}</td>
+                                            <td>${new Date(item.fields.time_created).toLocaleString()}</td>
+                                        </tr>`
+            }, "");
+            if (list) $("[tests]").html(list);
+            else $("[tests]").html("<div class='p-3'>No tests so far</div>");
+
+            $("body").css("opacity", 1.0);
+            $("[get-stats]").prop("disabled", false);
+        }
+    </script>
+{% endblock %}
